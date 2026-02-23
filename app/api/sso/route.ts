@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     response.cookies.set("session", token, {
       httpOnly: true,
       secure: true,
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
     })
 
