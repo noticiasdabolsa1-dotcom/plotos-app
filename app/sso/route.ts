@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 
-export async function POST(req: Request) {
-  const { token } = await req.json()
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const token = searchParams.get("token")
+
+  if (!token) {
+    return NextResponse.json({ error: "No token" }, { status: 400 })
+  }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    )
+    jwt.verify(token, process.env.JWT_SECRET as string)
 
-    const response = NextResponse.json({ success: true })
+    const response = NextResponse.redirect(
+      new URL("/dashboard", req.url)
+    )
 
     response.cookies.set("session", token, {
       httpOnly: true,
