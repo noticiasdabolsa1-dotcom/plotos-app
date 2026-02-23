@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import jwt from "jsonwebtoken"
 
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get("session")
+  const session = request.cookies.get("session")?.value
 
-  if (!session && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!session) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  return NextResponse.next()
+  try {
+    jwt.verify(session, process.env.JWT_SECRET as string)
+    return NextResponse.next()
+  } catch {
+    return NextResponse.redirect(new URL("/login", request.url))
+  }
+}
+
+export const config = {
+  matcher: ["/dashboard/:path*"],
 }
