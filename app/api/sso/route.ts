@@ -32,9 +32,10 @@ export async function GET(req: NextRequest) {
 
     response.cookies.set("session", token, {
       httpOnly: true,
-      secure: true,          // obrigatório para sameSite: "none"
-      sameSite: "none",      // necessário para SSO entre domínios
+      secure: true,
+      sameSite: "none",
       path: "/",
+      domain: ".plotos.com.br",
     })
 
     return response
