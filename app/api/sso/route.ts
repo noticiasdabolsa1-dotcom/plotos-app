@@ -19,16 +19,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    )
+    jwt.verify(token, process.env.JWT_SECRET as string)
 
-    console.log("TOKEN DECODIFICADO:", decoded)
-
-    const response = NextResponse.redirect(
-      new URL("/dashboard", req.url)
-    )
+    const response = NextResponse.json({
+      success: true,
+      message: "Cookie should now be set"
+    })
 
     response.cookies.set("session", token, {
       httpOnly: true,
