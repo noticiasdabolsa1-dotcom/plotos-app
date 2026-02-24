@@ -32,12 +32,13 @@ export async function GET(req: NextRequest) {
 
     response.cookies.set("session", token, {
       httpOnly: true,
-      secure: true,          // obrigatório em produção HTTPS
-      sameSite: "lax",       // ESSENCIAL para funcionar entre domínios
+      secure: true,          // obrigatório para sameSite: "none"
+      sameSite: "none",      // necessário para SSO entre domínios
       path: "/",
     })
 
     return response
+
   } catch (err) {
     console.log("ERRO VERIFY:", err)
     return NextResponse.json(
