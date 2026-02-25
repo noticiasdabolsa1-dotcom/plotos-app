@@ -11,26 +11,21 @@ export async function GET(req: Request, { params }: { params: { ticker: string }
     );
     const data = await response.json();
 
-    // 1. CORREÇÃO: Pegar o primeiro item da lista de resultados
     if (!data.results || data.results.length === 0) {
       return NextResponse.json({ error: "Ação não encontrada" }, { status: 404 });
     }
 
-    const acao = data.results[0]; // Agora 'acao' contém os dados reais da PETR4, VALE3, etc.
+    const acao = data.results[0];
+    
+    // A Brapi coloca os dados fundamentais dentro de 'fundamental' ou às vezes 
+    // direto no objeto se o módulo foi carregado com sucesso.
+    const f = acao.fundamental || acao;
 
-    // 2. Lógica de Scores (Baseada nos dados reais que a Brapi entrega)
-    const fundamental = acao.fundamental || {};
-    
-    // Valor: P/L baixo e positivo ganha nota alta
-    const scoreValor = (fundamental.priceToEarnings > 0 && fundamental.priceToEarnings < 15) ? 85 : 40;
-    
-    // Saúde: Margem Líquida acima de 15% ganha nota alta
-    const scoreSaude = (fundamental.netMargin || 0) > 15 ? 90 : 50;
-    
-    // Dividendos: DY acima de 8% ganha nota alta
-    const scoreDividendos = (fundamental.dividendYield || 0) > 8 ? 95 : 60;
+    // Lógica de Scores para o Radar (0-100)
+    const scoreValor = (f.priceToEarnings > 0 && f.priceToEarnings < 15) ? 85 : 40;
+    const scoreSaude = (f.netMargin > 15) ? 90 : 50;
+    const scoreDividendos = (f.dividendYield > 8) ? 95 : 60;
 
-    // 3. RETORNO: Ajustado para o que o seu Dashboard (page.tsx) espera
     return NextResponse.json({
       ticker: acao.symbol,
       nome: acao.longName || acao.shortName,
@@ -38,14 +33,15 @@ export async function GET(req: Request, { params }: { params: { ticker: string }
       scores: {
         valor: scoreValor,
         saude: scoreSaude,
-        crescimento: 70, 
+        crescimento: 70,
         dividendos: scoreDividendos,
         preco: 65
       },
       indicadores: {
-        pl: fundamental.priceToEarnings || 0,
-        dy: fundamental.dividendYield || 0,
-        roe: fundamental.returnOnEquity || 0
+        // Tentamos pegar de várias chaves possíveis que a Brapi usa
+        pl: f.priceToEarnings || f.pe || 0,
+        dy: f.dividendYield || f.yield || 0,
+        roe: f.returnOnEquity || f.roe || 0
       }
     });
 
