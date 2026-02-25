@@ -14,24 +14,23 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Valida o token recebido usando a chave secreta da Vercel
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string)
+    // Valida o token com a chave da Vercel
+    jwt.verify(token, process.env.JWT_SECRET as string)
 
-    // Prepara o redirecionamento para o dashboard (raiz)
+    // Prepara o redirecionamento para a raiz (onde seu dashboard está agora)
     const response = NextResponse.redirect(new URL("/", req.url))
 
-    // Configuração de cookie para SSO entre subdomínios
+    // CONFIGURAÇÃO MESTRA DO COOKIE
     response.cookies.set("session", token, {
       httpOnly: true,
       secure: true,
-      sameSite: "none", // Necessário para redirecionamentos entre domínios diferentes
+      sameSite: "none", // Necessário para navegação vinda do WordPress
       path: "/",
-      domain: ".plotos.com.br", // O PONTO ANTES É ESSENCIAL para compartilhar entre plotos.com.br e app.plotos.com.br
+      domain: ".plotos.com.br", // O ponto inicial permite que funcione em qualquer subdomínio
     })
 
     return response
   } catch (err) {
-    console.log("ERRO VERIFY:", err)
     return NextResponse.json({ error: "Invalid token" }, { status: 401 })
   }
 }
