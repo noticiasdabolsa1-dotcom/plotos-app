@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     // Prepara o redirecionamento para o dashboard
     const response = NextResponse.redirect(
-      new URL("/dashboard", req.url)
+      new URL("/", req.url)
     )
 
     // Configuração vital do cookie para funcionar entre subdomínios

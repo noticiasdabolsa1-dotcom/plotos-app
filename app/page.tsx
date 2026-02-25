@@ -1,9 +1,25 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
+
+import { useState } from 'react';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import { Radar } from 'react-chartjs-2';
 
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
 
 export default function Dashboard() {
   const [ticker, setTicker] = useState('');
@@ -13,81 +29,148 @@ export default function Dashboard() {
   async function buscarAcao() {
     if (!ticker) return;
     setLoading(true);
+
     try {
-      // Conecta com a sua API interna que você configurou no StackBlitz
       const res = await fetch(`/api/acao/${ticker.toUpperCase()}`);
       const data = await res.json();
-      if (data.erro) alert("Ação não encontrada!");
-      else setDados(data);
+
+      if (data.error) {
+        alert('Ação não encontrada!');
+        setDados(null);
+      } else {
+        setDados(data);
+      }
     } catch (err) {
-      console.error("Erro ao buscar dados");
+      console.error('Erro ao buscar dados');
+      setDados(null);
     } finally {
       setLoading(false);
     }
   }
 
+  // 🔥 CORREÇÃO AQUI
   const radarData = {
-    labels: ['P/L', 'DY', 'ROE', 'Crescimento', 'Margem'],
-    datasets: [{
-      label: 'Score Plotos',
-      data: dados ? [
-        dados.pl < 15 ? 8 : 4,
-        parseFloat(dados.dy) > 10 ? 9 : parseFloat(dados.dy) / 1.2,
-        parseFloat(dados.roe) > 15 ? 9 : 5,
-        7, 6 // Valores base para o gráfico não ficar vazio
-      ] : [0, 0, 0, 0, 0],
-      backgroundColor: 'rgba(30, 58, 138, 0.2)',
-      borderColor: '#1e3a8a',
-      borderWidth: 2,
-    }],
+    labels: ['Valor', 'Saúde', 'Crescimento', 'Dividendos', 'Preço'],
+    datasets: [
+      {
+        label: 'Score Plotos',
+        data: dados
+          ? [
+              dados?.scores?.valor ?? 0,
+              dados?.scores?.saude ?? 0,
+              dados?.scores?.crescimento ?? 0,
+              dados?.scores?.dividendos ?? 0,
+              dados?.scores?.preco ?? 0,
+            ]
+          : [0, 0, 0, 0, 0], // 👈 array padrão
+        backgroundColor: 'rgba(255, 183, 0, 0.2)',
+        borderColor: '#ffb700',
+        borderWidth: 3,
+        pointBackgroundColor: '#ffb700',
+        pointBorderColor: '#fff',
+      },
+    ],
+  };
+
+  const radarOptions = {
+    scales: {
+      r: {
+        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+        pointLabels: { color: '#fff', font: { size: 14 } },
+        ticks: { display: false, stepSize: 20 },
+        suggestedMin: 0,
+        suggestedMax: 100,
+      },
+    },
+    plugins: {
+      legend: { display: false },
+    },
   };
 
   return (
-    <main className="min-h-screen bg-[#f1f5f9] p-4 md:p-10 font-sans text-slate-900">
-      <div className="max-w-2xl mx-auto">
-        
-        {/* Barra de Busca Profissional */}
-        <div className="mb-8 flex gap-3">
-          <input 
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            type="text" 
-            placeholder="EX: PETR4" 
-            className="flex-1 p-4 rounded-2xl border border-slate-200 outline-none shadow-sm uppercase font-bold"
-          />
-          <button 
-            onClick={buscarAcao}
-            className="bg-[#1e3a8a] text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-900 transition shadow-lg active:scale-95"
-          >
-            {loading ? '...' : 'Analisar'}
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+          <h1 className="text-3xl font-bold tracking-tight">
+            PLOTOS <span className="text-[#ffb700]">DASHBOARD</span>
+          </h1>
 
-        {dados && (
-          <div className="bg-white rounded-[40px] p-8 md:p-12 shadow-2xl border border-white animate-in fade-in zoom-in duration-500">
-            <span className="text-blue-500 text-[10px] font-black tracking-[0.3em] uppercase">Análise de Ativo</span>
-            <h1 className="text-5xl font-black text-slate-900 mt-2 tracking-tighter">{dados.ticker}</h1>
-            <p className="text-2xl font-medium text-slate-400 mb-8">R$ {dados.preco.toFixed(2)}</p>
+          <div className="flex w-full md:w-auto gap-2">
+            <input
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && buscarAcao()}
+              type="text"
+              placeholder="Buscar ativo (Ex: PETR4)"
+              className="flex-1 md:w-64 p-4 rounded-xl bg-[#1a1a1a] border border-white/10 outline-none focus:border-[#ffb700] transition uppercase font-bold text-center"
+            />
+            <button
+              onClick={buscarAcao}
+              disabled={loading}
+              className="bg-[#ffb700] text-black px-8 py-4 rounded-xl font-bold hover:bg-[#e6a500] transition active:scale-95 disabled:opacity-50"
+            >
+              {loading ? '...' : 'Analisar'}
+            </button>
+          </div>
+        </header>
 
-            {/* Grid de Indicadores (Fim do 0.00%) */}
-            <div className="grid grid-cols-2 gap-4 mb-10">
-              <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold mb-1">P/L Atual</span>
-                <span className="text-xl font-black text-slate-800">{dados.pl}</span>
+        {dados ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
+            <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-5xl font-black mb-1">{dados.ticker}</h2>
+                  <p className="text-gray-400 text-lg">{dados.nome}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">
+                    R$ {dados?.preco?.toFixed(2)}
+                  </p>
+                  <p className="text-green-400 font-medium text-sm">
+                    DADOS OFICIAIS B3
+                  </p>
+                </div>
               </div>
-              <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold mb-1">Div. Yield</span>
-                <span className="text-xl font-black text-emerald-600">{dados.dy}%</span>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+                    P/L Atual
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {dados?.indicadores?.pl?.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+                    Div. Yield
+                  </p>
+                  <p className="text-2xl font-bold text-[#ffb700]">
+                    {dados?.indicadores?.dy?.toFixed(2)}%
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Gráfico de Radar Plotos */}
-            <div className="bg-slate-50 rounded-[32px] p-6 border border-slate-100">
-               <Radar data={radarData} options={{ scales: { r: { min: 0, max: 10, ticks: { display: false } } }, plugins: { legend: { display: false } } }} />
+            <div className="bg-[#111] border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center min-h-[400px]">
+              <h3 className="text-xl font-bold mb-6">
+                Pontuação Geral (0-100)
+              </h3>
+              <div className="w-full max-w-[380px]">
+                <Radar data={radarData} options={radarOptions} />
+              </div>
             </div>
+          </div>
+        ) : (
+          <div className="text-center py-32 bg-[#111] rounded-3xl border border-white/5">
+            <p className="text-gray-500 text-xl font-medium">
+              Digite o ticker de uma empresa para iniciar a análise inteligente.
+            </p>
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
