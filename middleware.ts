@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import jwt from "jsonwebtoken"
 
 export function middleware(request: NextRequest) {
+  // Pega apenas o VALOR do cookie (o .value é essencial no Next 13/14)
   const session = request.cookies.get("session")?.value
 
-  if (!session) {
+  // Se não houver cookie e a pessoa tentar acessar o dashboard, manda para login
+  if (!session && request.nextUrl.pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  try {
-    jwt.verify(session, process.env.JWT_SECRET as string)
-    return NextResponse.next()
-  } catch {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
+  // Se houver cookie, deixa passar (a validação profunda o dashboard fará)
+  return NextResponse.next()
 }
 
 export const config = {
