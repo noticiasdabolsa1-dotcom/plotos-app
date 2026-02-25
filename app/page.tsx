@@ -29,26 +29,25 @@ export default function Dashboard() {
   async function buscarAcao() {
     if (!ticker) return;
     setLoading(true);
-
     try {
       const res = await fetch(`/api/acao/${ticker.toUpperCase()}`);
       const data = await res.json();
 
       if (data.error) {
-        alert('Ação não encontrada!');
+        alert('Ativo não encontrado!');
         setDados(null);
       } else {
         setDados(data);
       }
     } catch (err) {
-      console.error('Erro ao buscar dados');
+      console.error('Erro na busca');
       setDados(null);
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔥 CORREÇÃO AQUI
+  // 🔥 CORREÇÃO PRINCIPAL AQUI
   const radarData = {
     labels: ['Valor', 'Saúde', 'Crescimento', 'Dividendos', 'Preço'],
     datasets: [
@@ -62,12 +61,13 @@ export default function Dashboard() {
               dados?.scores?.dividendos ?? 0,
               dados?.scores?.preco ?? 0,
             ]
-          : [0, 0, 0, 0, 0], // 👈 array padrão
-        backgroundColor: 'rgba(255, 183, 0, 0.2)',
-        borderColor: '#ffb700',
+          : [0, 0, 0, 0, 0],
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: '#3b82f6',
         borderWidth: 3,
-        pointBackgroundColor: '#ffb700',
+        pointBackgroundColor: '#3b82f6',
         pointBorderColor: '#fff',
+        pointRadius: 4,
       },
     ],
   };
@@ -75,9 +75,12 @@ export default function Dashboard() {
   const radarOptions = {
     scales: {
       r: {
-        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        pointLabels: { color: '#fff', font: { size: 14 } },
+        angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
+        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        pointLabels: {
+          color: '#64748b',
+          font: { size: 12, weight: 'bold' as const },
+        },
         ticks: { display: false, stepSize: 20 },
         suggestedMin: 0,
         suggestedMax: 100,
@@ -88,27 +91,43 @@ export default function Dashboard() {
     },
   };
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-          <h1 className="text-3xl font-bold tracking-tight">
-            PLOTOS <span className="text-[#ffb700]">DASHBOARD</span>
-          </h1>
+  const scoreMedio = dados
+    ? (
+        (dados?.scores?.valor ?? 0 +
+          dados?.scores?.saude ?? 0 +
+          dados?.scores?.crescimento ?? 0 +
+          dados?.scores?.dividendos ?? 0 +
+          dados?.scores?.preco ?? 0) / 5
+      ).toFixed(0)
+    : 0;
 
-          <div className="flex w-full md:w-auto gap-2">
+  return (
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+
+        <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+              <span className="text-white font-black text-xl">P</span>
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-800 uppercase">
+              Plotos
+            </h1>
+          </div>
+
+          <div className="flex w-full md:w-auto bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200/60">
             <input
               value={ticker}
               onChange={(e) => setTicker(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && buscarAcao()}
               type="text"
-              placeholder="Buscar ativo (Ex: PETR4)"
-              className="flex-1 md:w-64 p-4 rounded-xl bg-[#1a1a1a] border border-white/10 outline-none focus:border-[#ffb700] transition uppercase font-bold text-center"
+              placeholder="Buscar ativo... (Ex: PETR4)"
+              className="flex-1 md:w-64 px-4 py-3 rounded-xl outline-none text-slate-600 font-medium uppercase"
             />
             <button
               onClick={buscarAcao}
               disabled={loading}
-              className="bg-[#ffb700] text-black px-8 py-4 rounded-xl font-bold hover:bg-[#e6a500] transition active:scale-95 disabled:opacity-50"
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition active:scale-95 disabled:opacity-50 shadow-md shadow-blue-100"
             >
               {loading ? '...' : 'Analisar'}
             </button>
@@ -116,60 +135,82 @@ export default function Dashboard() {
         </header>
 
         {dados ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
-            <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
-              <div className="flex justify-between items-start mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <div className="lg:col-span-7 bg-white rounded-[2.5rem] shadow-xl shadow-blue-900/5 p-8 border border-white">
+              <div className="flex justify-between items-start mb-10">
                 <div>
-                  <h2 className="text-5xl font-black mb-1">{dados.ticker}</h2>
-                  <p className="text-gray-400 text-lg">{dados.nome}</p>
+                  <h2 className="text-6xl font-black text-slate-900 mb-1 tracking-tighter">
+                    {dados?.ticker}
+                  </h2>
+                  <p className="text-slate-400 font-semibold tracking-wide uppercase text-sm">
+                    {dados?.nome}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">
+                  <p className="text-4xl font-bold text-slate-900 tracking-tight">
                     R$ {dados?.preco?.toFixed(2)}
-                  </p>
-                  <p className="text-green-400 font-medium text-sm">
-                    DADOS OFICIAIS B3
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
-                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+              <div className="grid grid-cols-3 gap-4 mb-10">
+                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">
                     P/L Atual
                   </p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xl font-black text-slate-800">
                     {dados?.indicadores?.pl?.toFixed(2)}
                   </p>
                 </div>
 
-                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
-                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">
                     Div. Yield
                   </p>
-                  <p className="text-2xl font-bold text-[#ffb700]">
+                  <p className="text-xl font-black text-blue-600">
                     {dados?.indicadores?.dy?.toFixed(2)}%
                   </p>
                 </div>
+
+                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">
+                    ROE
+                  </p>
+                  <p className="text-xl font-black text-slate-800">
+                    {dados?.indicadores?.roe?.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100/50">
+                <h3 className="text-blue-700 font-bold text-sm mb-2">
+                  Veredito do Radar
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                  Nota média geral: <strong>{scoreMedio}</strong>/100.
+                </p>
               </div>
             </div>
 
-            <div className="bg-[#111] border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center min-h-[400px]">
-              <h3 className="text-xl font-bold mb-6">
+            <div className="lg:col-span-5 bg-white rounded-[2.5rem] shadow-xl shadow-blue-900/5 p-8 flex flex-col items-center justify-center border border-white min-h-[450px]">
+              <h3 className="text-lg font-bold text-slate-800 mb-8">
                 Pontuação Geral (0-100)
               </h3>
-              <div className="w-full max-w-[380px]">
+              <div className="w-full max-w-[340px]">
                 <Radar data={radarData} options={radarOptions} />
               </div>
             </div>
+
           </div>
         ) : (
-          <div className="text-center py-32 bg-[#111] rounded-3xl border border-white/5">
-            <p className="text-gray-500 text-xl font-medium">
-              Digite o ticker de uma empresa para iniciar a análise inteligente.
+          <div className="text-center py-40 bg-white rounded-[3rem] shadow-sm border border-slate-200/50">
+            <p className="text-slate-400 text-lg font-medium">
+              Digite um ticker para iniciar a análise inteligente.
             </p>
           </div>
         )}
+
       </div>
     </div>
   );
