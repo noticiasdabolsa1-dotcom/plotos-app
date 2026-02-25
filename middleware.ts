@@ -1,32 +1,28 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import jwt from "jsonwebtoken"
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get("session")?.value
-  const { pathname } = request.nextUrl
+  const session = request.cookies.get("session")?.value;
+  const { pathname } = request.nextUrl;
 
-  // 1. Se o usuário tentar acessar a raiz (onde está o dashboard agora)
+  // 1. PERMITIR que a rota de login (API) passe livremente
+  if (pathname.startsWith("/api/sso")) {
+    return NextResponse.next();
+  }
+
+  // 2. PROTEGER as páginas do dashboard
+  // Se estiver na raiz "/" e não tiver sessão, bloqueia
   if (pathname === "/") {
-    // Se não houver sessão, bloqueia e manda para o login
     if (!session) {
-      return NextResponse.redirect(new URL("/login", request.url))
-    }
-
-    // Se houver sessão, tenta validar o JWT
-    try {
-      jwt.verify(session, process.env.JWT_SECRET as string)
-      return NextResponse.next()
-    } catch (err) {
-      // Se o token for inválido ou expirado, manda para o login
-      return NextResponse.redirect(new URL("/login", request.url))
+      return NextResponse.rewrite(new URL("/login-necessario", request.url)); 
+      // Ou redirecionar direto: return NextResponse.redirect("https://plotos.com.br/login");
     }
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
-// O Matcher agora deve vigiar apenas a raiz
 export const config = {
-  matcher: ["/"],
-}
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
