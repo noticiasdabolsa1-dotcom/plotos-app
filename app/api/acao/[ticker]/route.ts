@@ -17,31 +17,30 @@ export async function GET(req: Request, { params }: { params: { ticker: string }
 
     const acao = data.results[0];
     
-    // A Brapi coloca os dados fundamentais dentro de 'fundamental' ou às vezes 
-    // direto no objeto se o módulo foi carregado com sucesso.
-    const f = acao.fundamental || acao;
+    // Tentamos pegar os fundamentos. Se não existirem (como no caso da COGN3), usamos um objeto vazio.
+    const f = acao.fundamental || {};
 
-    // Lógica de Scores para o Radar (0-100)
-    const scoreValor = (f.priceToEarnings > 0 && f.priceToEarnings < 15) ? 85 : 40;
+    // Lógica de Scores - Se o dado for nulo, damos uma nota neutra (50) para o gráfico não sumir
+    const scoreValor = (acao.priceEarnings && acao.priceEarnings < 15) ? 85 : 50;
     const scoreSaude = (f.netMargin > 15) ? 90 : 50;
-    const scoreDividendos = (f.dividendYield > 8) ? 95 : 60;
+    const scoreDividendos = (f.dividendYield > 5) ? 90 : 40;
 
     return NextResponse.json({
       ticker: acao.symbol,
-      nome: acao.longName || acao.shortName,
-      preco: acao.regularMarketPrice,
+      nome: acao.longName || acao.shortName || "Empresa",
+      preco: acao.regularMarketPrice || 0,
       scores: {
         valor: scoreValor,
         saude: scoreSaude,
-        crescimento: 70,
+        crescimento: 60,
         dividendos: scoreDividendos,
-        preco: 65
+        preco: 55
       },
       indicadores: {
-        // Tentamos pegar de várias chaves possíveis que a Brapi usa
-        pl: f.priceToEarnings || f.pe || 0,
-        dy: f.dividendYield || f.yield || 0,
-        roe: f.returnOnEquity || f.roe || 0
+        // Se for null, enviamos 0 para o dashboard tratar
+        pl: acao.priceEarnings || 0,
+        dy: f.dividendYield || 0,
+        roe: f.returnOnEquity || 0
       }
     });
 
