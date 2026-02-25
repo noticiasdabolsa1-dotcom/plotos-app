@@ -12,8 +12,14 @@ import {
 } from 'chart.js';
 import { Radar } from 'react-chartjs-2';
 
-// Registra os componentes necessários para o gráfico de radar
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
 
 export default function Dashboard() {
   const [ticker, setTicker] = useState('');
@@ -23,42 +29,45 @@ export default function Dashboard() {
   async function buscarAcao() {
     if (!ticker) return;
     setLoading(true);
+
     try {
       const res = await fetch(`/api/acao/${ticker.toUpperCase()}`);
       const data = await res.json();
+
       if (data.error) {
-        alert("Ação não encontrada!");
+        alert('Ação não encontrada!');
         setDados(null);
       } else {
         setDados(data);
       }
     } catch (err) {
-      console.error("Erro ao buscar dados");
+      console.error('Erro ao buscar dados');
+      setDados(null);
     } finally {
       setLoading(false);
     }
   }
 
-  // Configuração do Radar baseada nas 5 dimensões do Tradar
+  // 🔥 CORREÇÃO AQUI
   const radarData = {
     labels: ['Valor', 'Saúde', 'Crescimento', 'Dividendos', 'Preço'],
     datasets: [
       {
         label: 'Score Plotos',
-        data: dados ? [
-          dados.scores.valor,
-          dados.scores.saude,
-          dados.scores.crescimento,
-          dados.scores.dividendos,
-          dados.scores.preco
-        ] : ,
-        backgroundColor: 'rgba(255, 183, 0, 0.2)', // Amarelo/Dourado estilo Tradar
+        data: dados
+          ? [
+              dados?.scores?.valor ?? 0,
+              dados?.scores?.saude ?? 0,
+              dados?.scores?.crescimento ?? 0,
+              dados?.scores?.dividendos ?? 0,
+              dados?.scores?.preco ?? 0,
+            ]
+          : [0, 0, 0, 0, 0], // 👈 array padrão
+        backgroundColor: 'rgba(255, 183, 0, 0.2)',
         borderColor: '#ffb700',
         borderWidth: 3,
         pointBackgroundColor: '#ffb700',
         pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: '#ffb700',
       },
     ],
   };
@@ -83,8 +92,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-          <h1 className="text-3xl font-bold tracking-tight">PLOTOS <span className="text-[#ffb700]">DASHBOARD</span></h1>
-          
+          <h1 className="text-3xl font-bold tracking-tight">
+            PLOTOS <span className="text-[#ffb700]">DASHBOARD</span>
+          </h1>
+
           <div className="flex w-full md:w-auto gap-2">
             <input
               value={ticker}
@@ -96,8 +107,8 @@ export default function Dashboard() {
             />
             <button
               onClick={buscarAcao}
-              className="bg-[#ffb700] text-black px-8 py-4 rounded-xl font-bold hover:bg-[#e6a500] transition active:scale-95 disabled:opacity-50"
               disabled={loading}
+              className="bg-[#ffb700] text-black px-8 py-4 rounded-xl font-bold hover:bg-[#e6a500] transition active:scale-95 disabled:opacity-50"
             >
               {loading ? '...' : 'Analisar'}
             </button>
@@ -106,7 +117,6 @@ export default function Dashboard() {
 
         {dados ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-500">
-            {/* Bloco de Informações Principais */}
             <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
               <div className="flex justify-between items-start mb-8">
                 <div>
@@ -114,43 +124,50 @@ export default function Dashboard() {
                   <p className="text-gray-400 text-lg">{dados.nome}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">R$ {dados.preco.toFixed(2)}</p>
-                  <p className="text-green-400 font-medium">Dados Oficiais B3</p>
+                  <p className="text-3xl font-bold">
+                    R$ {dados?.preco?.toFixed(2)}
+                  </p>
+                  <p className="text-green-400 font-medium text-sm">
+                    DADOS OFICIAIS B3
+                  </p>
                 </div>
               </div>
 
-              {/* Grid de Mini Indicadores */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-4 rounded-2xl text-center">
-                  <p className="text-gray-500 text-sm mb-1 uppercase">P/L Atual</p>
-                  <p className="text-2xl font-bold">{dados.indicadores.pl.toFixed(2)}</p>
+                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+                    P/L Atual
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {dados?.indicadores?.pl?.toFixed(2)}
+                  </p>
                 </div>
-                <div className="bg-white/5 p-4 rounded-2xl text-center">
-                  <p className="text-gray-500 text-sm mb-1 uppercase">Dividend Yield</p>
-                  <p className="text-2xl font-bold text-[#ffb700]">{dados.indicadores.dy.toFixed(2)}%</p>
+
+                <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                  <p className="text-gray-500 text-xs mb-1 uppercase tracking-wider">
+                    Div. Yield
+                  </p>
+                  <p className="text-2xl font-bold text-[#ffb700]">
+                    {dados?.indicadores?.dy?.toFixed(2)}%
+                  </p>
                 </div>
-              </div>
-              
-              <div className="mt-8 p-6 bg-[#ffb700]/5 border border-[#ffb700]/20 rounded-2xl">
-                <h3 className="text-[#ffb700] font-bold mb-2">Veredito do Radar</h3>
-                <p className="text-gray-300 leading-relaxed">
-                  O ativo apresenta um forte score em <span className="text-white font-bold">Saúde Financeira</span> ({dados.scores.saude}) e 
-                  <span className="text-white font-bold"> Dividendos</span> ({dados.scores.dividendos}), superando a média do setor.
-                </p>
               </div>
             </div>
 
-            {/* Bloco do Gráfico de Radar */}
             <div className="bg-[#111] border border-white/5 p-8 rounded-3xl flex flex-col items-center justify-center min-h-[400px]">
-              <h3 className="text-xl font-bold mb-6">Pontuação Geral (0-100)</h3>
-              <div className="w-full max-w-[400px]">
+              <h3 className="text-xl font-bold mb-6">
+                Pontuação Geral (0-100)
+              </h3>
+              <div className="w-full max-w-[380px]">
                 <Radar data={radarData} options={radarOptions} />
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center py-20 bg-[#111] rounded-3xl border border-white/5">
-            <p className="text-gray-500 text-xl">Digite um ticker acima para iniciar a análise inteligente.</p>
+          <div className="text-center py-32 bg-[#111] rounded-3xl border border-white/5">
+            <p className="text-gray-500 text-xl font-medium">
+              Digite o ticker de uma empresa para iniciar a análise inteligente.
+            </p>
           </div>
         )}
       </div>
