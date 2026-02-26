@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, TrendingUp, Zap, Activity, DollarSign, Award } from 'lucide-react';
-import { Radar } from 'react-chartjs-2';
+import dynamic from 'next/dynamic';
+import { Search, TrendingUp, Zap, Activity, DollarSign } from 'lucide-react';
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -13,7 +13,20 @@ import {
   Legend,
 } from 'chart.js';
 
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
+
+// 🔥 Import dinâmico para evitar erro SSR na Vercel
+const Radar = dynamic(
+  () => import('react-chartjs-2').then((mod) => mod.Radar),
+  { ssr: false }
+);
 
 export default function Dashboard() {
   const [ticker, setTicker] = useState('');
@@ -23,18 +36,19 @@ export default function Dashboard() {
   async function buscarAcao() {
     if (!ticker) return;
     setLoading(true);
+
     try {
-      // Conecta com a sua API dinâmica da Brapi
       const res = await fetch(`/api/acao/${ticker.toUpperCase()}`);
       const data = await res.json();
+
       if (data.error) {
-        alert("Ativo não encontrado!");
+        alert('Ativo não encontrado!');
         setDados(null);
       } else {
         setDados(data);
       }
     } catch (err) {
-      console.error("Erro na busca");
+      console.error('Erro na busca', err);
     } finally {
       setLoading(false);
     }
@@ -45,16 +59,15 @@ export default function Dashboard() {
     datasets: [
       {
         label: 'Score Plotos',
-        // Usa os dados da API ou um array zerado caso não haja busca [7]
-        data: dados ? [
-          dados.scores.valor,
-          dados.scores.saude,
-          dados.scores.crescimento,
-          dados.scores.dividendos,
-          dados.scores.preco
-        ] : ,
-        backgroundColor: 'rgba(0, 212, 255, 0.2)', 
-        borderColor: '#00d4ff', 
+        data: [
+          dados?.scores?.valor ?? 0,
+          dados?.scores?.saude ?? 0,
+          dados?.scores?.crescimento ?? 0,
+          dados?.scores?.dividendos ?? 0,
+          dados?.scores?.preco ?? 0,
+        ],
+        backgroundColor: 'rgba(0, 212, 255, 0.2)',
+        borderColor: '#00d4ff',
         borderWidth: 3,
         pointBackgroundColor: '#00d4ff',
         pointBorderColor: '#fff',
@@ -68,10 +81,13 @@ export default function Dashboard() {
       r: {
         angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        pointLabels: { color: '#cbd5e1', font: { size: 12, weight: 'bold' as const } },
-        ticks: { display: false, stepSize: 20 },
-        suggestedMin: 0,
-        suggestedMax: 100,
+        pointLabels: {
+          color: '#cbd5e1',
+          font: { size: 12, weight: 'bold' as const },
+        },
+        ticks: { display: false },
+        min: 0,
+        max: 100,
       },
     },
     plugins: { legend: { display: false } },
@@ -81,16 +97,16 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 font-sans p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        
-        {/* Header e Busca - Estilo Plotos */}
         <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-[#081b3b] rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-black text-xl">P</span>
             </div>
-            <h1 className="text-2xl font-black text-[#081b3b] uppercase tracking-tighter">Plotos</h1>
+            <h1 className="text-2xl font-black text-[#081b3b] uppercase tracking-tighter">
+              Plotos
+            </h1>
           </div>
-          
+
           <div className="flex w-full md:w-auto bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200/60">
             <input
               value={ticker}
@@ -111,54 +127,76 @@ export default function Dashboard() {
         </header>
 
         {dados ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
-            
-            {/* Card Principal - Azul Petróleo #081b3b [8] */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-7 bg-[#081b3b] rounded-[2.5rem] shadow-2xl p-8 text-white border border-white/5">
               <div className="flex justify-between items-start mb-10">
                 <div>
-                  <h2 className="text-6xl font-black mb-1 tracking-tighter">{dados.ticker}</h2>
-                  <p className="text-blue-200/70 font-semibold tracking-wide uppercase text-sm">{dados.nome}</p>
+                  <h2 className="text-6xl font-black mb-1 tracking-tighter">
+                    {dados.ticker}
+                  </h2>
+                  <p className="text-blue-200/70 font-semibold uppercase text-sm">
+                    {dados.nome}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-4xl font-bold tracking-tight">R$ {dados.preco.toFixed(2)}</p>
-                  <span className="inline-block mt-2 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold border border-green-500/20">
-                    DADOS OFICIAIS B3
-                  </span>
+                  <p className="text-4xl font-bold tracking-tight">
+                    R$ {dados?.preco?.toFixed?.(2) ?? '0.00'}
+                  </p>
                 </div>
               </div>
 
-              {/* Grid de Indicadores */}
               <div className="grid grid-cols-3 gap-4 mb-10">
-                <MiniCard label="P/L Atual" value={dados.indicadores.pl.toFixed(2)} icon={<Activity size={14}/>} />
-                <MiniCard label="Div. Yield" value={`${dados.indicadores.dy.toFixed(2)}%`} icon={<DollarSign size={14}/>} highlight />
-                <MiniCard label="ROE" value={`${dados.indicadores.roe.toFixed(2)}%`} icon={<TrendingUp size={14}/>} />
+                <MiniCard
+                  label="P/L Atual"
+                  value={(dados?.indicadores?.pl ?? 0).toFixed(2)}
+                  icon={<Activity size={14} />}
+                />
+                <MiniCard
+                  label="Div. Yield"
+                  value={`${(dados?.indicadores?.dy ?? 0).toFixed(2)}%`}
+                  icon={<DollarSign size={14} />}
+                  highlight
+                />
+                <MiniCard
+                  label="ROE"
+                  value={`${(dados?.indicadores?.roe ?? 0).toFixed(2)}%`}
+                  icon={<TrendingUp size={14} />}
+                />
               </div>
 
-              {/* Veredito Estilo Tradar */}
               <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10">
                 <h3 className="text-[#00d4ff] font-bold text-sm mb-2 flex items-center gap-2">
                   <Zap size={16} fill="#00d4ff" /> Veredito do Radar
                 </h3>
                 <p className="text-blue-100/80 text-sm leading-relaxed font-medium">
-                  Ativo com pontuação de saúde em <span className="text-white font-bold">{dados.scores.saude}</span>. 
-                  A nota geral ({((dados.scores.valor + dados.scores.saude + dados.scores.crescimento + dados.scores.dividendos + dados.scores.preco) / 5).toFixed(0)}) reflete o perfil operacional atual.
+                  Nota geral:{' '}
+                  {(
+                    (
+                      (dados?.scores?.valor ?? 0) +
+                      (dados?.scores?.saude ?? 0) +
+                      (dados?.scores?.crescimento ?? 0) +
+                      (dados?.scores?.dividendos ?? 0) +
+                      (dados?.scores?.preco ?? 0)
+                    ) / 5
+                  ).toFixed(0)}
                 </p>
               </div>
             </div>
 
-            {/* Card do Radar */}
             <div className="lg:col-span-5 bg-[#081b3b] rounded-[2.5rem] shadow-2xl p-8 flex flex-col items-center justify-center border border-white/5 min-h-[450px]">
-              <h3 className="text-lg font-bold text-white mb-8">Pontuação Geral (0-100)</h3>
+              <h3 className="text-lg font-bold text-white mb-8">
+                Pontuação Geral (0-100)
+              </h3>
               <div className="w-full h-[300px]">
                 <Radar data={radarData} options={radarOptions} />
               </div>
             </div>
-
           </div>
         ) : (
           <div className="text-center py-40 bg-white rounded-[3rem] shadow-sm border border-slate-200/50">
-            <p className="text-slate-400 lg:text-xl font-medium px-6">Digite um ticker para iniciar a análise inteligente.</p>
+            <p className="text-slate-400 lg:text-xl font-medium px-6">
+              Digite um ticker para iniciar a análise inteligente.
+            </p>
           </div>
         )}
       </div>
@@ -166,13 +204,30 @@ export default function Dashboard() {
   );
 }
 
-// Sub-componente para os cards de indicadores
-function MiniCard({ label, value, icon, highlight = false }: { label: string, value: string, icon: React.ReactNode, highlight?: boolean }) {
+function MiniCard({
+  label,
+  value,
+  icon,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  highlight?: boolean;
+}) {
   return (
     <div className="bg-white/5 p-5 rounded-3xl border border-white/10 text-center flex flex-col items-center">
       <div className="text-blue-200/50 mb-2">{icon}</div>
-      <p className="text-blue-200/50 text-[10px] font-bold uppercase mb-1 tracking-wider">{label}</p>
-      <p className={`text-xl font-black ${highlight ? 'text-[#00d4ff]' : 'text-white'}`}>{value}</p>
+      <p className="text-blue-200/50 text-[10px] font-bold uppercase mb-1 tracking-wider">
+        {label}
+      </p>
+      <p
+        className={`text-xl font-black ${
+          highlight ? 'text-[#00d4ff]' : 'text-white'
+        }`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
